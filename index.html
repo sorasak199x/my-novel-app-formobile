@@ -6223,6 +6223,25 @@
                 try {
                     currentUser = JSON.parse(savedUser);
                     renderUserChip();
+                    // หมายเหตุ (มือถือ): ขอ access token แบบ prompt:'' อาจถูกบล็อกหลัง refresh
+                    // (mobile browser บล็อก popup/iframe แบบ silent) แล้ว callback จะไม่ถูกเรียกเลย
+                    // จึงต้องมี fallback กันไว้ไม่ให้ user ค้างสถานะ "กำลังเชื่อมต่อ" เฉยๆ
+                    // โดยไม่ไป reset currentUser/หน้าจอ login (ยังถือว่า login อยู่เสมอ ถ้ามี gUser)
+                    let driveTokenSettled = false;
+                    const originalTokenCallback = tokenClient.callback;
+                    tokenClient.callback = async (tokenResponse) => {
+                        driveTokenSettled = true;
+                        tokenClient.callback = originalTokenCallback;
+                        await originalTokenCallback(tokenResponse);
+                    };
+                    setTimeout(() => {
+                        if (!driveTokenSettled) {
+                            // silent request ไม่ตอบสนอง (ถูกบล็อกบนมือถือ) — ไม่บังคับ logout,
+                            // แค่แจ้งสถานะว่ายังไม่ได้ซิงค์ Drive แต่ใช้งานแอป/ข้อมูลในเครื่องได้ตามปกติ
+                            tokenClient.callback = originalTokenCallback;
+                            setSyncStatus('offline', 'บันทึกในเครื่องไว้แล้ว (ยังไม่ซิงค์ Drive)');
+                        }
+                    }, 4000);
                     tokenClient.requestAccessToken({ prompt: '' });
                 } catch (e) {
                     localStorage.removeItem('gUser');
