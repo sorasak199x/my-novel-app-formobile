@@ -6198,7 +6198,8 @@
             google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
                 callback: handleGoogleCredential,
-                auto_select: true  // silent sign-in อัตโนมัติถ้าเคย consent ไว้แล้ว
+                auto_select: true,  // silent sign-in อัตโนมัติถ้าเคย consent ไว้แล้ว
+                use_fedcm_for_prompt: true  // เปิดใช้ FedCM: Chrome (รวมมือถือ) บังคับ FedCM กับ flow แบบเก่าแล้ว ทำให้ auto sign-in ค้าง/ไม่ทำงานถ้าไม่เปิดตัวนี้
             });
 
             tokenClient = google.accounts.oauth2.initTokenClient({
@@ -6249,12 +6250,21 @@
                 }
             } else {
                 // ลอง silent sign-in ผ่าน One Tap (จะไม่แสดง popup ถ้า user ยังล็อกอิน Google อยู่)
+                // หมายเหตุ: ภายใต้ FedCM (Chrome รวมมือถือ) notification อาจมาช้าหรือไม่มาเลย
+                // จึงกันไว้ด้วย timeout ให้ปุ่มล็อกอินขึ้นแน่ๆ ถ้า prompt ไม่ตอบสนองในเวลาอันควร
+                let oneTapSettled = false;
                 google.accounts.id.prompt((notification) => {
+                    oneTapSettled = true;
                     if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
                         // ไม่มี session เก่า → แสดงปุ่มล็อกอินตามปกติ
                         renderSignInButton();
                     }
                 });
+                setTimeout(() => {
+                    if (!oneTapSettled) {
+                        renderSignInButton();
+                    }
+                }, 3000);
             }
         }
 
