@@ -2830,6 +2830,10 @@
             if (!currentProjectId) return;
             const p = projects.find(proj => proj.id === currentProjectId);
             if (p) {
+                // บันทึก timestamp ของแต่ละเพจแยกกัน เพื่อให้ mergeAppData รู้ว่าเพจไหนใหม่กว่า
+                // เมื่อ sync ระหว่างอุปกรณ์ต่างกัน
+                p.savedAt = new Date().toISOString();
+
                 if ((p.type || 'page') === 'timeline') {
                     saveTimelineData(p);
                     return;
@@ -2954,7 +2958,8 @@
                 historyStack: [],
                 historyIndex: -1,
                 parentId: null,
-                isDeleted: false
+                isDeleted: false,
+                savedAt: new Date().toISOString()
             };
 
             projects.push(newProject);
@@ -2999,7 +3004,8 @@
                 historyStack: [],
                 historyIndex: -1,
                 parentId: parentId,
-                isDeleted: false
+                isDeleted: false,
+                savedAt: new Date().toISOString()
             };
 
             projects.push(newProject);
@@ -3065,6 +3071,7 @@
                 historyIndex: -1,
                 parentId: parentId,
                 isDeleted: false,
+                savedAt: new Date().toISOString(),
                 timelineItems: [],
                 characters: [],
                 connections: [],
@@ -3210,6 +3217,7 @@
             const proj = projects.find(p => p.id === activeMenuProjectId);
             if (!proj) return;
             proj.isDeleted = true;
+            proj.savedAt = new Date().toISOString(); // บันทึกเวลาลบเพื่อให้ mergeAppData รู้ว่าฝั่งนี้ลบหลัง
 
             if (proj.id === currentProjectId) {
                 const remaining = projects.filter(p => !p.isDeleted);
@@ -3230,6 +3238,7 @@
             const proj = projects.find(p => p.id === projId);
             if (proj) {
                 proj.isDeleted = false;
+                proj.savedAt = new Date().toISOString(); // บันทึกเวลา restore เพื่อให้ mergeAppData รู้ว่าฝั่งนี้ restore หลัง
                 renderProjectList();
             }
         }
@@ -6110,25 +6119,6 @@
             if (!data) return;
             isApplyingRemoteData = true;
             try {
-                // Merge isDeleted flags: ถ้า local มีเพจที่ถูกลบ (isDeleted=true) แต่ remote ไม่รู้
-                // ให้ propagate การลบนั้นเข้าไปใน remote data ด้วย เพื่อไม่ให้เพจที่ลบแล้วโผล่กลับมา
-                const localRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
-                if (localRaw) {
-                    try {
-                        const localData = JSON.parse(localRaw);
-                        const localDeletedIds = new Set(
-                            (localData.projects || [])
-                                .filter(p => p.isDeleted)
-                                .map(p => p.id)
-                        );
-                        if (localDeletedIds.size > 0) {
-                            (data.projects || []).forEach(p => {
-                                if (localDeletedIds.has(p.id)) p.isDeleted = true;
-                            });
-                        }
-                    } catch (e) { /* ignore parse errors */ }
-                }
-
                 projects = data.projects || [];
                 projectCounter = data.projectCounter || 0;
 
@@ -6152,6 +6142,73 @@
             } finally {
                 isApplyingRemoteData = false;
             }
+        }
+
+        /*
+         * mergeAppData(localData, remoteData) → mergedData
+         *
+         * กฎการ merge:
+         *  - รวม project จากทั้งสองฝั่งโดยใช้ id เป็น key
+         *  - ถ้ามีเพจเดียวกัน (id ตรงกัน): เลือกเนื้อหาจากฝั่งที่มี savedAt ใหม่กว่า
+         *    แต่ถ้าฝั่งใดฝั่งหนึ่ง isDeleted = true → บังคับ isDeleted = true เสมอ
+         *    (การลบมีความสำคัญสูงสุด ป้องกันเพจที่ลบแล้วโผล่กลับ)
+         *  - ถ้ามีเพจใหม่ที่อีกฝั่งไม่มี: เพิ่มเข้ามาทั้งหมด
+         *  - projectCounter ใช้ค่าสูงสุดจากทั้งสองฝั่ง กันไม่ให้ id ชน
+         *  - currentProjectId ใช้จากฝั่งที่ savedAt ใหม่กว่า
+         *  - savedAt ใช้เวลา merge เป็นค่าใหม่
+         */
+        function mergeAppData(localData, remoteData) {
+            const localProjects  = localData.projects  || [];
+            const remoteProjects = remoteData.projects || [];
+
+            // สร้าง map id → project สำหรับแต่ละฝั่ง
+            const localMap  = new Map(localProjects.map(p  => [p.id, p]));
+            const remoteMap = new Map(remoteProjects.map(p => [p.id, p]));
+
+            // รวม id ทั้งหมดจากทั้งสองฝั่ง
+            const allIds = new Set([...localMap.keys(), ...remoteMap.keys()]);
+
+            const mergedMap = new Map();
+            allIds.forEach(id => {
+                const lp = localMap.get(id);
+                const rp = remoteMap.get(id);
+
+                if (lp && rp) {
+                    // มีทั้งสองฝั่ง — เลือกเนื้อหาจากฝั่งที่ใหม่กว่า
+                    const lTime = lp.savedAt ? new Date(lp.savedAt).getTime() : 0;
+                    const rTime = rp.savedAt ? new Date(rp.savedAt).getTime() : 0;
+                    const winner = { ...(rTime >= lTime ? rp : lp) };
+
+                    // การลบมีความสำคัญสูงสุด: ถ้าฝั่งใดลบแล้วให้ถือว่าลบเสมอ
+                    if (lp.isDeleted || rp.isDeleted) winner.isDeleted = true;
+
+                    mergedMap.set(id, winner);
+                } else {
+                    // มีแค่ฝั่งเดียว — เพิ่มเข้าไปตามปกติ
+                    mergedMap.set(id, { ...(lp || rp) });
+                }
+            });
+
+            // รักษาลำดับเดิมจากฝั่งที่ใหม่กว่า แล้วต่อด้วยเพจใหม่จากอีกฝั่ง
+            const localTime  = localData.savedAt  ? new Date(localData.savedAt).getTime()  : 0;
+            const remoteTime = remoteData.savedAt ? new Date(remoteData.savedAt).getTime() : 0;
+            const newerData  = remoteTime >= localTime ? remoteData : localData;
+            const olderData  = remoteTime >= localTime ? localData  : remoteData;
+
+            const newerIds = new Set((newerData.projects || []).map(p => p.id));
+
+            // เรียงลำดับ: เพจจากฝั่งใหม่ก่อน แล้วตามด้วยเพจใหม่จากฝั่งเก่า
+            const orderedMerged = [
+                ...(newerData.projects || []).map(p => mergedMap.get(p.id)).filter(Boolean),
+                ...(olderData.projects || []).filter(p => !newerIds.has(p.id)).map(p => mergedMap.get(p.id)).filter(Boolean)
+            ];
+
+            return {
+                projects:         orderedMerged,
+                projectCounter:   Math.max(localData.projectCounter || 0, remoteData.projectCounter || 0),
+                currentProjectId: newerData.currentProjectId,
+                savedAt:          new Date().toISOString()
+            };
         }
 
         /* ---------- IndexedDB: เก็บ video base64 แยกจาก localStorage ---------- */
@@ -6519,7 +6576,7 @@
             return res.json();
         }
 
-        // ครั้งแรกหลัง login: เทียบข้อมูล local กับ Drive แล้วใช้อันที่ใหม่กว่า
+        // ครั้งแรกหลัง login: merge ข้อมูล local กับ Drive แล้ว apply ผลลัพธ์
         async function initialDriveSync() {
             isDriveSyncPending = true; // บล็อก auto-save ไว้ก่อนจนกว่าจะ sync เสร็จ
             // timeout สูงสุด 20 วินาที กันกรณี Drive API ค้าง ไม่ให้ user save ไม่ได้ตลอดไป
@@ -6545,28 +6602,49 @@
                     driveFileId = remoteFile.id;
                     const remoteData = await downloadDriveFile(remoteFile.id);
 
-                    const localTime = localData ? new Date(localData.savedAt).getTime() : 0;
-                    const remoteTime = remoteData ? new Date(remoteData.savedAt).getTime() : 0;
+                    if (localData && remoteData) {
+                        // --- มีทั้งสองฝั่ง: merge เข้าด้วยกัน ---
+                        // แต่ละเพจใช้ savedAt ของตัวเองในการตัดสิน ไม่ใช่ timestamp รวม
+                        // เพื่อให้ทุกการเปลี่ยนแปลงจากทุกอุปกรณ์ถูกรวมเข้าด้วยกันเสมอ
+                        const merged = mergeAppData(localData, remoteData);
 
-                    if (remoteTime > localTime) {
-                        // restore video placeholders จาก IndexedDB กลับเข้า html ก่อน apply
-                        // (เหมือนกับที่ทำใน initApp เมื่อโหลดจาก localStorage)
-                        await restoreVideoDataInProjects(remoteData.projects);
-                        applyAppData(remoteData);
-                        // บันทึกลง localStorage ในรูปแบบ placeholder (ไม่ใส่ base64 ดิบ)
-                        const remoteDataForLocal = JSON.parse(JSON.stringify(remoteData));
-                        for (const p of remoteDataForLocal.projects || []) {
+                        // restore video base64 จาก IndexedDB ก่อน apply
+                        await restoreVideoDataInProjects(merged.projects);
+                        applyAppData(merged);
+
+                        // บันทึกผล merge ลง localStorage (เก็บ video เป็น placeholder)
+                        const mergedForLocal = JSON.parse(JSON.stringify(merged));
+                        for (const p of mergedForLocal.projects || []) {
                             if (p.html) p.html = await htmlWithVideoPlaceholders(p.html);
                         }
-                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(remoteDataForLocal));
-                        setSyncStatus('saved', 'โหลดข้อมูลล่าสุดจาก Drive แล้ว');
-                    } else if (localData) {
+                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mergedForLocal));
+
+                        // อัปโหลดผล merge ขึ้น Drive เพื่อให้อุปกรณ์อื่นได้รับข้อมูลล่าสุด
+                        await uploadDriveFile(mergedForLocal, driveFileId);
+                        setSyncStatus('saved', 'ซิงค์ข้อมูลเรียบร้อยแล้ว');
+
+                    } else if (remoteData && !localData) {
+                        // --- ไม่มี local: โหลดจาก Drive ล้วนๆ ---
+                        await restoreVideoDataInProjects(remoteData.projects);
+                        applyAppData(remoteData);
+                        const remoteForLocal = JSON.parse(JSON.stringify(remoteData));
+                        for (const p of remoteForLocal.projects || []) {
+                            if (p.html) p.html = await htmlWithVideoPlaceholders(p.html);
+                        }
+                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(remoteForLocal));
+                        setSyncStatus('saved', 'โหลดข้อมูลจาก Drive แล้ว');
+
+                    } else if (localData && !remoteData) {
+                        // --- Drive ว่าง: อัปโหลด local ขึ้นไป ---
                         await uploadDriveFile(localData, driveFileId);
                         setSyncStatus('saved', 'ซิงค์ขึ้น Drive แล้ว');
+
                     } else {
                         setSyncStatus('saved', 'เชื่อมต่อ Drive แล้ว');
                     }
+
                 } else if (localData) {
+                    // --- ยังไม่มีไฟล์ใน Drive: สร้างใหม่ ---
                     const created = await uploadDriveFile(localData, null);
                     driveFileId = created.id;
                     setSyncStatus('saved', 'สร้างไฟล์ใน Drive แล้ว');
