@@ -6092,6 +6092,7 @@
         let currentUser = null;
         let saveDebounceTimer = null;
         let isApplyingRemoteData = false;
+        let isDriveSyncPending = false; // true ขณะรอ Drive sync รอบแรก — บล็อก scheduleAutoSave ไว้ก่อน
 
         /* ---------- Helpers: รวบรวม / กระจายข้อมูลทั้งหมดของแอป ---------- */
         function collectAppData() {
@@ -6258,6 +6259,7 @@
         /* ---------- รวมจุดบันทึกทั้งหมด: เรียกทุกครั้งที่ข้อมูลเปลี่ยน ---------- */
         function scheduleAutoSave() {
             if (isApplyingRemoteData) return; // กำลังโหลดข้อมูลอยู่ ไม่ต้อง trigger save ซ้ำ
+            if (isDriveSyncPending) return;   // รอ Drive sync รอบแรกเสร็จก่อน ป้องกัน local เขียนทับ Drive
             setSyncStatus('saving', 'กำลังบันทึก...');
             clearTimeout(saveDebounceTimer);
             saveDebounceTimer = setTimeout(() => {
@@ -6500,6 +6502,14 @@
 
         // ครั้งแรกหลัง login: เทียบข้อมูล local กับ Drive แล้วใช้อันที่ใหม่กว่า
         async function initialDriveSync() {
+            isDriveSyncPending = true; // บล็อก auto-save ไว้ก่อนจนกว่าจะ sync เสร็จ
+            // timeout สูงสุด 20 วินาที กันกรณี Drive API ค้าง ไม่ให้ user save ไม่ได้ตลอดไป
+            const pendingGuard = setTimeout(() => {
+                if (isDriveSyncPending) {
+                    isDriveSyncPending = false;
+                    setSyncStatus('offline', 'ซิงค์ Drive หมดเวลา — บันทึกในเครื่องแล้ว');
+                }
+            }, 20000);
             setSyncStatus('saving', 'กำลังซิงค์กับ Google Drive...');
             try {
                 if (!gapiInited) {
@@ -6547,6 +6557,10 @@
             } catch (e) {
                 console.error('ซิงค์ Drive ล้มเหลว:', e);
                 setSyncStatus('error', 'ซิงค์ Drive ไม่สำเร็จ');
+            } finally {
+                // ปล่อย lock ให้ auto-save ทำงานได้ตามปกติ ไม่ว่าจะ sync สำเร็จหรือไม่
+                clearTimeout(pendingGuard);
+                isDriveSyncPending = false;
             }
         }
 
