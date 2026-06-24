@@ -6174,7 +6174,7 @@
                 setSyncStatus('error', 'ระบบ Google ยังไม่พร้อม');
                 return;
             }
-            tokenClient.requestAccessToken({ prompt: '' });
+            tokenClient.requestAccessToken({ prompt: '', hint: currentUser && currentUser.email });
         }
 
         function signOutGoogle() {
@@ -6248,7 +6248,10 @@
                             setSyncStatus('offline', 'บันทึกในเครื่องไว้แล้ว (ยังไม่ซิงค์ Drive)');
                         }
                     }, 4000);
-                    tokenClient.requestAccessToken({ prompt: '' });
+                    // ระบุ hint เป็น email ของ user เดิม เพื่อให้ Google รู้ว่าจะ silent ด้วยบัญชีไหน
+                    // ถ้าไม่ระบุ และเครื่อง/เบราว์เซอร์มีหลายบัญชี Google login อยู่ Google จะไม่กล้า
+                    // เดาเอง และมักเปลี่ยนเป็นเด้ง popup ให้เลือกบัญชีแทนที่จะตอบแบบ silent
+                    tokenClient.requestAccessToken({ prompt: '', hint: currentUser.email });
                 } catch (e) {
                     localStorage.removeItem('gUser');
                     renderSignInButton();
