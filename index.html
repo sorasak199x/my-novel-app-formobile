@@ -6147,14 +6147,15 @@
         /*
          * mergeAppData(localData, remoteData) → mergedData
          *
-         * กฎการ merge:
-         *  - รวม project จากทั้งสองฝั่งโดยใช้ id เป็น key
-         *  - ถ้ามีเพจเดียวกัน (id ตรงกัน): เลือกเนื้อหาจากฝั่งที่มี savedAt ใหม่กว่า
-         *    แต่ถ้าฝั่งใดฝั่งหนึ่ง isDeleted = true → บังคับ isDeleted = true เสมอ
-         *    (การลบมีความสำคัญสูงสุด ป้องกันเพจที่ลบแล้วโผล่กลับ)
-         *  - ถ้ามีเพจใหม่ที่อีกฝั่งไม่มี: เพิ่มเข้ามาทั้งหมด
+         * กฎการ merge (Drive-wins policy):
+         *  - ถ้า project id ตรงกัน → ใช้ข้อมูลจาก Drive (remote) เสมอ
+         *    เหตุผล: Drive คือ source of truth กลาง ทุกอุปกรณ์ต้องเชื่อ Drive ก่อน
+         *    ข้อยกเว้น: ถ้าฝั่งใดฝั่งหนึ่ง isDeleted = true → บังคับ isDeleted = true เสมอ
+         *  - ถ้า project มีเฉพาะใน local (สร้างใหม่ยังไม่เคย sync ขึ้น Drive) → เพิ่มเข้าไป
+         *  - ถ้า project มีเฉพาะใน Drive → เพิ่มเข้าไป (เครื่องอื่น sync ขึ้นไปแล้ว)
+         *  - ลำดับ project ใช้จาก Drive เป็นหลัก แล้วต่อด้วย local-only projects
          *  - projectCounter ใช้ค่าสูงสุดจากทั้งสองฝั่ง กันไม่ให้ id ชน
-         *  - currentProjectId ใช้จากฝั่งที่ savedAt ใหม่กว่า
+         *  - currentProjectId ใช้จาก Drive (remote) เสมอ
          *  - savedAt ใช้เวลา merge เป็นค่าใหม่
          */
         function mergeAppData(localData, remoteData) {
@@ -6165,48 +6166,38 @@
             const localMap = new Map(localProjects.map(p => [p.id, p]));
             const remoteMap = new Map(remoteProjects.map(p => [p.id, p]));
 
-            // รวม id ทั้งหมดจากทั้งสองฝั่ง
-            const allIds = new Set([...localMap.keys(), ...remoteMap.keys()]);
-
+            // เริ่มจาก Drive เป็นหลัก (remote-wins)
             const mergedMap = new Map();
-            allIds.forEach(id => {
-                const lp = localMap.get(id);
-                const rp = remoteMap.get(id);
 
-                if (lp && rp) {
-                    // มีทั้งสองฝั่ง — เลือกเนื้อหาจากฝั่งที่ใหม่กว่า
-                    const lTime = lp.savedAt ? new Date(lp.savedAt).getTime() : 0;
-                    const rTime = rp.savedAt ? new Date(rp.savedAt).getTime() : 0;
-                    const winner = { ...(rTime >= lTime ? rp : lp) };
+            // 1) เดิน project ทุกตัวใน Drive ก่อน
+            remoteProjects.forEach(rp => {
+                const lp = localMap.get(rp.id);
+                const winner = { ...rp }; // Drive ชนะเสมอเมื่อ id ตรงกัน
 
-                    // การลบมีความสำคัญสูงสุด: ถ้าฝั่งใดลบแล้วให้ถือว่าลบเสมอ
-                    if (lp.isDeleted || rp.isDeleted) winner.isDeleted = true;
+                // การลบมีความสำคัญสูงสุด: ถ้าฝั่งใดลบแล้วให้ถือว่าลบเสมอ
+                if (lp && lp.isDeleted) winner.isDeleted = true;
 
-                    mergedMap.set(id, winner);
-                } else {
-                    // มีแค่ฝั่งเดียว — เพิ่มเข้าไปตามปกติ
-                    mergedMap.set(id, { ...(lp || rp) });
+                mergedMap.set(rp.id, winner);
+            });
+
+            // 2) เพิ่ม project ที่มีเฉพาะใน local (ยังไม่เคย sync ขึ้น Drive)
+            localProjects.forEach(lp => {
+                if (!remoteMap.has(lp.id)) {
+                    mergedMap.set(lp.id, { ...lp });
                 }
             });
 
-            // รักษาลำดับเดิมจากฝั่งที่ใหม่กว่า แล้วต่อด้วยเพจใหม่จากอีกฝั่ง
-            const localTime = localData.savedAt ? new Date(localData.savedAt).getTime() : 0;
-            const remoteTime = remoteData.savedAt ? new Date(remoteData.savedAt).getTime() : 0;
-            const newerData = remoteTime >= localTime ? remoteData : localData;
-            const olderData = remoteTime >= localTime ? localData : remoteData;
-
-            const newerIds = new Set((newerData.projects || []).map(p => p.id));
-
-            // เรียงลำดับ: เพจจากฝั่งใหม่ก่อน แล้วตามด้วยเพจใหม่จากฝั่งเก่า
+            // ลำดับ: Drive projects ก่อน แล้วตามด้วย local-only projects
+            const remoteIds = new Set(remoteProjects.map(p => p.id));
             const orderedMerged = [
-                ...(newerData.projects || []).map(p => mergedMap.get(p.id)).filter(Boolean),
-                ...(olderData.projects || []).filter(p => !newerIds.has(p.id)).map(p => mergedMap.get(p.id)).filter(Boolean)
+                ...remoteProjects.map(p => mergedMap.get(p.id)).filter(Boolean),
+                ...localProjects.filter(p => !remoteIds.has(p.id)).map(p => mergedMap.get(p.id)).filter(Boolean)
             ];
 
             return {
                 projects: orderedMerged,
                 projectCounter: Math.max(localData.projectCounter || 0, remoteData.projectCounter || 0),
-                currentProjectId: newerData.currentProjectId,
+                currentProjectId: remoteData.currentProjectId || localData.currentProjectId,
                 savedAt: new Date().toISOString()
             };
         }
@@ -6480,9 +6471,8 @@
                     };
                     setTimeout(() => {
                         if (!driveTokenSettled) {
-                            // silent request ไม่ตอบสนอง (ถูกบล็อกบนมือถือ หรือ Google OAuth ช้า)
-                            // ไม่ reset callback เพราะถ้า token มาทีหลัง (เช่น บนคอมที่ช้ากว่า 10s)
-                            // จะได้ยัง sync Drive ได้อยู่ — แค่แจ้งสถานะไว้ก่อน
+                            // silent request ไม่ตอบสนอง (ถูกบล็อกบนมือถือ หรือ OAuth ช้า)
+                            // ไม่ reset callback — ถ้า token มาทีหลังก็ยัง sync Drive ได้อยู่
                             setSyncStatus('offline', 'บันทึกในเครื่องไว้แล้ว (ยังไม่ซิงค์ Drive)');
                         }
                     }, 10000);
