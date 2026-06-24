@@ -2196,28 +2196,17 @@
                 padding: 40px 20px;
             }
 
-            /* Graph/table view: reduce padding */
+            /* Graph/table view: reduce padding, allow horizontal scroll */
             .graph-wrapper, .table-wrapper {
                 padding: 40px 20px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
-            /* Graph: stack data panel and canvas vertically on mobile */
+            /* Graph body: keep side-by-side layout, scroll horizontally on mobile */
             .graph-body {
-                flex-direction: column;
-            }
-            .graph-data-panel {
-                width: 100%;
-            }
-            .graph-canvas-panel {
-                width: 100%;
-                min-width: unset;
-                min-height: 280px;
-                padding: 12px;
-                box-sizing: border-box;
-            }
-            .graph-label input, .graph-label select {
-                min-width: unset;
-                width: 100%;
+                flex-wrap: nowrap;
+                min-width: max-content;
             }
 
             /* Table toolbar: scrollable on mobile */
