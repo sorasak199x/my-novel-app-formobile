@@ -2201,6 +2201,36 @@
                 padding: 40px 20px;
             }
 
+            /* Graph: stack data panel and canvas vertically on mobile */
+            .graph-body {
+                flex-direction: column;
+            }
+            .graph-data-panel {
+                width: 100%;
+            }
+            .graph-canvas-panel {
+                width: 100%;
+                min-width: unset;
+                min-height: 280px;
+                padding: 12px;
+                box-sizing: border-box;
+            }
+            .graph-label input, .graph-label select {
+                min-width: unset;
+                width: 100%;
+            }
+
+            /* Table toolbar: scrollable on mobile */
+            .table-toolbar {
+                gap: 10px;
+            }
+            .table-format-toolbar {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 4px;
+                -webkit-overflow-scrolling: touch;
+            }
+
             /* Modal: full width on small screens */
             .modal-box {
                 width: calc(100vw - 40px);
@@ -2212,11 +2242,41 @@
                 overflow-x: auto;
                 flex-wrap: nowrap;
                 padding-right: 16px;
+                -webkit-overflow-scrolling: touch;
+                /* Make room so toolbar doesn't overlap legend */
+                max-width: calc(100vw - 100px);
+            }
+
+            /* Legend panel: smaller and repositioned on mobile */
+            .legend-panel {
+                width: 180px;
+                right: 8px;
+                top: 8px;
+                font-size: 12px;
             }
 
             /* charmapViewContainer: adjust for no sidebar */
             #charmapViewContainer {
                 left: 0 !important;
+            }
+
+            /* Character map: always show node buttons on mobile (no hover) */
+            .character-node .node-btn {
+                opacity: 1;
+            }
+            .character-node .btn-upload {
+                opacity: 1;
+            }
+
+            /* Larger tap targets for node buttons on mobile */
+            .node-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+            .btn-upload {
+                font-size: 13px;
+                padding: 6px 10px;
             }
         }
     </style>
@@ -2735,16 +2795,16 @@
                         : `<span style="display:inline-block;width:22px;flex-shrink:0;"></span>`;
 
                     item.innerHTML = `
-                                                                                <div style="display: flex; align-items: center; gap: 6px; flex-grow: 1; overflow: hidden; min-width:0;">
-                                                                                    ${toggleArrow}
-                                                                                    <span class="project-icon">${iconText}</span>
-                                                                                    <span class="project-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.title.replace(/<[^>]*>?/gm, '').trim() || "Untitled"}</span>
-                                                                                </div>
-                                                                                <div class="project-item-actions">
-                                                                                    <button class="proj-action-btn" onclick="openProjectMenu(event, ${proj.id}, this)">•••</button>
-                                                                                    <button class="proj-action-btn" onclick="openToolMenu(event, this, ${proj.id})">+</button>
-                                                                                </div>
-                                                                            `;
+                                                                                    <div style="display: flex; align-items: center; gap: 6px; flex-grow: 1; overflow: hidden; min-width:0;">
+                                                                                        ${toggleArrow}
+                                                                                        <span class="project-icon">${iconText}</span>
+                                                                                        <span class="project-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.title.replace(/<[^>]*>?/gm, '').trim() || "Untitled"}</span>
+                                                                                    </div>
+                                                                                    <div class="project-item-actions">
+                                                                                        <button class="proj-action-btn" onclick="openProjectMenu(event, ${proj.id}, this)">•••</button>
+                                                                                        <button class="proj-action-btn" onclick="openToolMenu(event, this, ${proj.id})">+</button>
+                                                                                    </div>
+                                                                                `;
 
                     attachDragListeners(item, proj.id);
                     list.appendChild(item);
@@ -3073,15 +3133,15 @@
 
                 let iconText = proj.iconHtml.includes('<img') ? '🖼️' : proj.iconHtml;
                 item.innerHTML = `
-                                                                                            <div style="display: flex; align-items: center; gap: 15px; overflow: hidden;">
-                                                                                                <span style="font-size: 24px; flex-shrink: 0;">${iconText}</span>
-                                                                                                <span style="font-weight: bold; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.title.replace(/<[^>]*>?/gm, '').trim() || "Untitled"}</span>
-                                                                                            </div>
-                                                                                            <div style="display: flex; gap: 10px; flex-shrink: 0;">
-                                                                                                <button onclick="restoreProject(${proj.id}, event)" style="padding: 8px 16px; background: var(--hover-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='var(--hover-bg)'">Restore</button>
-                                                                                                <button onclick="permanentlyDeleteProject(${proj.id}, event)" style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='rgba(235, 87, 87, 0.1)'" onmouseout="this.style.background='transparent'">Delete Permanently</button>
-                                                                                            </div>
-                                                                                        `;
+                                                                                                <div style="display: flex; align-items: center; gap: 15px; overflow: hidden;">
+                                                                                                    <span style="font-size: 24px; flex-shrink: 0;">${iconText}</span>
+                                                                                                    <span style="font-weight: bold; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.title.replace(/<[^>]*>?/gm, '').trim() || "Untitled"}</span>
+                                                                                                </div>
+                                                                                                <div style="display: flex; gap: 10px; flex-shrink: 0;">
+                                                                                                    <button onclick="restoreProject(${proj.id}, event)" style="padding: 8px 16px; background: var(--hover-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='var(--hover-bg)'">Restore</button>
+                                                                                                    <button onclick="permanentlyDeleteProject(${proj.id}, event)" style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='rgba(235, 87, 87, 0.1)'" onmouseout="this.style.background='transparent'">Delete Permanently</button>
+                                                                                                </div>
+                                                                                            `;
                 list.appendChild(item);
             });
         }
@@ -3451,13 +3511,13 @@
             const controls = document.createElement('div');
             controls.className = 'block-controls';
             controls.innerHTML = `
-                                                                                                                        <button class="add-btn" onclick="openAddMenu(event, this)">+
-                                                                                                                            <span class="tooltip-text">Click to add below<br>Alt-click to add a block above</span>
-                                                                                                                        </button>
-                                                                                                                        <button class="drag-btn" onclick="openOptionsMenu(event, this)">⋮⋮
-                                                                                                                            <span class="tooltip-text">Drag to move<br>Click or ctrl/ to open menu</span>
-                                                                                                                        </button>
-                                                                                                                    `;
+                                                                                                                            <button class="add-btn" onclick="openAddMenu(event, this)">+
+                                                                                                                                <span class="tooltip-text">Click to add below<br>Alt-click to add a block above</span>
+                                                                                                                            </button>
+                                                                                                                            <button class="drag-btn" onclick="openOptionsMenu(event, this)">⋮⋮
+                                                                                                                                <span class="tooltip-text">Drag to move<br>Click or ctrl/ to open menu</span>
+                                                                                                                            </button>
+                                                                                                                        `;
 
             const wrapper = document.createElement('div');
             wrapper.className = 'block-content-wrapper';
@@ -3506,15 +3566,15 @@
                 ghost.id = 'ghostAddBlock';
                 ghost.className = 'block-row ghost-row';
                 ghost.innerHTML = `
-                                                                                                                            <div class="block-main">
-                                                                                                                                <div class="block-controls" style="opacity: 1;">
-                                                                                                                                    <button class="add-btn" onclick="openAddMenu(event, this); event.stopPropagation();">+</button>
+                                                                                                                                <div class="block-main">
+                                                                                                                                    <div class="block-controls" style="opacity: 1;">
+                                                                                                                                        <button class="add-btn" onclick="openAddMenu(event, this); event.stopPropagation();">+</button>
+                                                                                                                                    </div>
+                                                                                                                                    <div class="block-content-wrapper" onclick="addBlockFromGhost(); event.stopPropagation();">
+                                                                                                                                        <div class="ghost-placeholder">Click to add below</div>
+                                                                                                                                    </div>
                                                                                                                                 </div>
-                                                                                                                                <div class="block-content-wrapper" onclick="addBlockFromGhost(); event.stopPropagation();">
-                                                                                                                                    <div class="ghost-placeholder">Click to add below</div>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                        `;
+                                                                                                                            `;
             }
             editor.appendChild(ghost);
         }
@@ -3951,22 +4011,22 @@
             newItem.className = 'timeline-item';
 
             newItem.innerHTML = `
-                                                                                    <div class="timeline-content">
-                                                                                        <div class="datetime-group">
-                                                                                            <input type="text" class="input-date" placeholder="DD/MM/YYYY">
-                                                                                            <input type="text" class="input-time" placeholder="Time / Time Period">
-                                                                                        </div>
-                                                                                        <div class="details-group">
-                                                                                            <div class="header-row">
-                                                                                                <input type="text" class="input-title" placeholder="Event Title...">
-                                                                                                <button class="btn-delete-event" onclick="deleteTimelineItem(this)">Delete</button>
+                                                                                        <div class="timeline-content">
+                                                                                            <div class="datetime-group">
+                                                                                                <input type="text" class="input-date" placeholder="DD/MM/YYYY">
+                                                                                                <input type="text" class="input-time" placeholder="Time / Time Period">
                                                                                             </div>
-                                                                                            <div class="timeline-body">
-                                                                                                <textarea placeholder="Type event details here..."></textarea>
+                                                                                            <div class="details-group">
+                                                                                                <div class="header-row">
+                                                                                                    <input type="text" class="input-title" placeholder="Event Title...">
+                                                                                                    <button class="btn-delete-event" onclick="deleteTimelineItem(this)">Delete</button>
+                                                                                                </div>
+                                                                                                <div class="timeline-body">
+                                                                                                    <textarea placeholder="Type event details here..."></textarea>
+                                                                                                </div>
                                                                                             </div>
                                                                                         </div>
-                                                                                    </div>
-                                                                                `;
+                                                                                    `;
 
             container.appendChild(newItem);
             newItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -4078,6 +4138,62 @@
             scale = newScale; panX = mX - innerX * scale; panY = mY - innerY * scale; updateTransform();
         }, { passive: false });
 
+        // --- Touch support for Character Map: pinch-to-zoom + two-finger pan ---
+        let _cmTouches = [];
+        let _cmLastDist = -1;
+        let _cmLastMidX = -1, _cmLastMidY = -1;
+
+        function _cmGetDist(t1, t2) {
+            const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        workspace.addEventListener('touchstart', (e) => {
+            _cmTouches = Array.from(e.touches);
+            if (_cmTouches.length === 2) {
+                e.preventDefault();
+                _cmLastDist = _cmGetDist(_cmTouches[0], _cmTouches[1]);
+                _cmLastMidX = (_cmTouches[0].clientX + _cmTouches[1].clientX) / 2;
+                _cmLastMidY = (_cmTouches[0].clientY + _cmTouches[1].clientY) / 2;
+                isPanning = false; // cancel single-finger pan if 2nd finger arrives
+            }
+        }, { passive: false });
+
+        workspace.addEventListener('touchmove', (e) => {
+            _cmTouches = Array.from(e.touches);
+            if (_cmTouches.length !== 2) return;
+            e.preventDefault();
+            const dist = _cmGetDist(_cmTouches[0], _cmTouches[1]);
+            const midX = (_cmTouches[0].clientX + _cmTouches[1].clientX) / 2;
+            const midY = (_cmTouches[0].clientY + _cmTouches[1].clientY) / 2;
+            const rect = workspace.getBoundingClientRect();
+            const cx = midX - rect.left, cy = midY - rect.top;
+
+            if (_cmLastDist > 0) {
+                // Pinch zoom
+                let newScale = scale * (dist / _cmLastDist);
+                newScale = Math.max(0.3, Math.min(newScale, 2.5));
+                const innerX = (cx - panX) / scale, innerY = (cy - panY) / scale;
+                scale = newScale;
+                panX = cx - innerX * scale;
+                panY = cy - innerY * scale;
+            }
+            // Two-finger pan (translation via midpoint delta)
+            if (_cmLastMidX >= 0) {
+                panX += midX - _cmLastMidX;
+                panY += midY - _cmLastMidY;
+            }
+            _cmLastDist = dist;
+            _cmLastMidX = midX;
+            _cmLastMidY = midY;
+            updateTransform();
+        }, { passive: false });
+
+        workspace.addEventListener('touchend', (e) => {
+            _cmTouches = Array.from(e.touches);
+            if (_cmTouches.length < 2) { _cmLastDist = -1; _cmLastMidX = -1; _cmLastMidY = -1; }
+        }, { passive: false });
+
         function toggleLegend() {
             const p = document.getElementById('legendPanel'); p.classList.toggle('collapsed');
             document.getElementById('legendIcon').innerText = p.classList.contains('collapsed') ? '▲' : '▼';
@@ -4113,24 +4229,24 @@
                 node.style.top = ((workspace.clientHeight / 2 - panY) / scale + offsetY - 40) + 'px';
             }
             node.innerHTML = `
-                                                                                            <div class="color-palette" id="palette_${id}">
-                                                                                                <div class="swatch c-default" onclick="setColor('${id}','border-c-default',event)"></div>
-                                                                                                <div class="swatch c-blue" onclick="setColor('${id}','border-c-blue',event)"></div>
-                                                                                                <div class="swatch c-red" onclick="setColor('${id}','border-c-red',event)"></div>
-                                                                                                <div class="swatch c-pink" onclick="setColor('${id}','border-c-pink',event)"></div>
-                                                                                                <div class="swatch c-green" onclick="setColor('${id}','border-c-green',event)"></div>
-                                                                                                <div class="swatch c-purple" onclick="setColor('${id}','border-c-purple',event)"></div>
-                                                                                                <div class="swatch c-yellow" onclick="setColor('${id}','border-c-yellow',event)"></div>
-                                                                                            </div>
-                                                                                            <div class="image-circle ${defaultColor}" id="circle_${id}">
-                                                                                                <span>Image</span>
-                                                                                                <div class="btn-delete-node node-btn" onclick="deleteNode('${id}',event)">✕</div>
-                                                                                                <div class="btn-color-trigger node-btn" onclick="togglePalette('${id}',event)">🎨</div>
-                                                                                                <div class="btn-connect node-btn" onpointerdown="startLinking('${id}',event)">＋</div>
-                                                                                            </div>
-                                                                                            <label class="btn-upload">+ Upload Image<input type="file" accept="image/*" onchange="uploadImg(this,'circle_${id}')" style="display:none;"></label>
-                                                                                            <input type="text" class="char-name" value="${defaultName || `Character ${charCount}`}" onfocus="this.select()">
-                                                                                        `;
+                                                                                                <div class="color-palette" id="palette_${id}">
+                                                                                                    <div class="swatch c-default" onclick="setColor('${id}','border-c-default',event)"></div>
+                                                                                                    <div class="swatch c-blue" onclick="setColor('${id}','border-c-blue',event)"></div>
+                                                                                                    <div class="swatch c-red" onclick="setColor('${id}','border-c-red',event)"></div>
+                                                                                                    <div class="swatch c-pink" onclick="setColor('${id}','border-c-pink',event)"></div>
+                                                                                                    <div class="swatch c-green" onclick="setColor('${id}','border-c-green',event)"></div>
+                                                                                                    <div class="swatch c-purple" onclick="setColor('${id}','border-c-purple',event)"></div>
+                                                                                                    <div class="swatch c-yellow" onclick="setColor('${id}','border-c-yellow',event)"></div>
+                                                                                                </div>
+                                                                                                <div class="image-circle ${defaultColor}" id="circle_${id}">
+                                                                                                    <span>Image</span>
+                                                                                                    <div class="btn-delete-node node-btn" onclick="deleteNode('${id}',event)">✕</div>
+                                                                                                    <div class="btn-color-trigger node-btn" onclick="togglePalette('${id}',event)">🎨</div>
+                                                                                                    <div class="btn-connect node-btn" onpointerdown="startLinking('${id}',event)">＋</div>
+                                                                                                </div>
+                                                                                                <label class="btn-upload">+ Upload Image<input type="file" accept="image/*" onchange="uploadImg(this,'circle_${id}')" style="display:none;"></label>
+                                                                                                <input type="text" class="char-name" value="${defaultName || `Character ${charCount}`}" onfocus="this.select()">
+                                                                                            `;
             initDrag(node); workspaceInner.appendChild(node); return id;
         }
 
@@ -4361,39 +4477,39 @@
             card.className = 'chart-card';
             card.id = cardId;
             card.innerHTML = `
-                                                                    <div class="chart-card-header" onclick="toggleChartCard('${cardId}')">
-                                                                        <span class="chart-card-toggle">▼</span>
-                                                                        <input class="chart-card-title-input" type="text" placeholder="Chart Title…"
-                                                                            value="${savedData ? (savedData.title || '').replace(/"/g, '&quot;') : ''}"
-                                                                            onclick="event.stopPropagation()"
-                                                                            oninput="renderChartCard('${cardId}')">
-                                                                        <span class="chart-card-type-badge" id="${badgeId}">Bar ↕</span>
-                                                                        <button class="chart-card-delete" onclick="deleteChartCard(event,'${cardId}')" title="Delete this chart">✕</button>
-                                                                    </div>
-                                                                    <div class="chart-card-body">
-                                                                        <div class="graph-toolbar" style="margin-bottom:20px;">
-                                                                            <label class="graph-label">Type
-                                                                                <select id="${typeId}" onchange="renderChartCard('${cardId}')">
-                                                                                    <option value="bar">Bar (Vertical)</option>
-                                                                                    <option value="bar_h">Bar (Horizontal)</option>
-                                                                                    <option value="line">Line</option>
-                                                                                    <option value="pie">Pie</option>
-                                                                                </select>
-                                                                            </label>
-                                                                            <button class="btn-notion primary" onclick="addChartRow('${rowsId}','${cardId}')">＋ Add Row</button>
+                                                                        <div class="chart-card-header" onclick="toggleChartCard('${cardId}')">
+                                                                            <span class="chart-card-toggle">▼</span>
+                                                                            <input class="chart-card-title-input" type="text" placeholder="Chart Title…"
+                                                                                value="${savedData ? (savedData.title || '').replace(/"/g, '&quot;') : ''}"
+                                                                                onclick="event.stopPropagation()"
+                                                                                oninput="renderChartCard('${cardId}')">
+                                                                            <span class="chart-card-type-badge" id="${badgeId}">Bar ↕</span>
+                                                                            <button class="chart-card-delete" onclick="deleteChartCard(event,'${cardId}')" title="Delete this chart">✕</button>
                                                                         </div>
-                                                                        <div class="graph-body" id="gbody_${cardId}">
-                                                                            <div class="graph-data-panel">
-                                                                                <div class="graph-data-header">
-                                                                                    <span>Label</span><span>Value</span><span>Color</span><span></span>
+                                                                        <div class="chart-card-body">
+                                                                            <div class="graph-toolbar" style="margin-bottom:20px;">
+                                                                                <label class="graph-label">Type
+                                                                                    <select id="${typeId}" onchange="renderChartCard('${cardId}')">
+                                                                                        <option value="bar">Bar (Vertical)</option>
+                                                                                        <option value="bar_h">Bar (Horizontal)</option>
+                                                                                        <option value="line">Line</option>
+                                                                                        <option value="pie">Pie</option>
+                                                                                    </select>
+                                                                                </label>
+                                                                                <button class="btn-notion primary" onclick="addChartRow('${rowsId}','${cardId}')">＋ Add Row</button>
+                                                                            </div>
+                                                                            <div class="graph-body" id="gbody_${cardId}">
+                                                                                <div class="graph-data-panel">
+                                                                                    <div class="graph-data-header">
+                                                                                        <span>Label</span><span>Value</span><span>Color</span><span></span>
+                                                                                    </div>
+                                                                                    <div id="${rowsId}"></div>
                                                                                 </div>
-                                                                                <div id="${rowsId}"></div>
+                                                                                <div class="graph-canvas-panel" style="min-height:380px;">
+                                                                                    <canvas id="${canvasId}"></canvas>
+                                                                                </div>
                                                                             </div>
-                                                                            <div class="graph-canvas-panel" style="min-height:380px;">
-                                                                                <canvas id="${canvasId}"></canvas>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>`;
+                                                                        </div>`;
 
             document.getElementById('chartCardList').appendChild(card);
 
@@ -4436,15 +4552,15 @@
             row.className = 'graph-row';
             row.id = rowId;
             row.innerHTML = `
-                                                                    <input type="text" class="graph-label-input" placeholder="Label…"
-                                                                        value="${label !== undefined ? String(label).replace(/"/g, '&quot;') : ''}"
-                                                                        oninput="renderChartCard('${cardId}')">
-                                                                    <input type="number" class="graph-value-input" placeholder="0"
-                                                                        value="${value !== undefined && value !== null ? value : ''}"
-                                                                        oninput="renderChartCard('${cardId}')">
-                                                                    <input type="color" class="graph-color-input" value="${autoColor}"
-                                                                        oninput="renderChartCard('${cardId}')">
-                                                                    <button class="graph-row-delete" onclick="document.getElementById('${rowId}').remove(); renderChartCard('${cardId}')" title="Delete row">✕</button>`;
+                                                                        <input type="text" class="graph-label-input" placeholder="Label…"
+                                                                            value="${label !== undefined ? String(label).replace(/"/g, '&quot;') : ''}"
+                                                                            oninput="renderChartCard('${cardId}')">
+                                                                        <input type="number" class="graph-value-input" placeholder="0"
+                                                                            value="${value !== undefined && value !== null ? value : ''}"
+                                                                            oninput="renderChartCard('${cardId}')">
+                                                                        <input type="color" class="graph-color-input" value="${autoColor}"
+                                                                            oninput="renderChartCard('${cardId}')">
+                                                                        <button class="graph-row-delete" onclick="document.getElementById('${rowId}').remove(); renderChartCard('${cardId}')" title="Delete row">✕</button>`;
             document.getElementById(rowsId).appendChild(row);
         }
 
@@ -4960,6 +5076,7 @@
                 const th = document.createElement('th');
                 th.innerHTML = `<textarea class="cell-input" rows="1" oninput="updateTableHeader(${colIdx}, this.value); autoGrowTableCell(this, 0);" onfocus="selectTableCell('header', null, ${colIdx}); this.select();" placeholder="Column ${colIdx + 1}">${escapeTableCellText(cellObj.v)}</textarea>`;
                 th.addEventListener('contextmenu', (e) => { e.preventDefault(); openRcMenuDual(e, colIdx, null); });
+                addLongPress(th, (e) => openRcMenuDual(e, colIdx, null));
                 applyCellHeaderStyle(th, cellObj, colIdx);
                 const colHandle = document.createElement('div');
                 colHandle.className = 'col-resize-handle';
@@ -5004,11 +5121,13 @@
                 numRowHandle.addEventListener('touchstart', (e) => startRowResize(e, rowIdx + 1), { passive: false });
                 tdNum.appendChild(numRowHandle);
                 tdNum.addEventListener('contextmenu', (e) => { e.preventDefault(); openRcMenu(e, 'row', rowIdx); });
+                addLongPress(tdNum, (e) => openRcMenu(e, 'row', rowIdx));
                 tr.appendChild(tdNum);
                 rowData.forEach((cellObj, colIdx) => {
                     const td = document.createElement('td');
                     td.innerHTML = `<textarea class="cell-input" rows="1" oninput="updateTableCell(${rowIdx}, ${colIdx}, this.value); autoGrowTableCell(this, ${rowIdx + 1});" onfocus="selectTableCell('body', ${rowIdx}, ${colIdx})">${escapeTableCellText(cellObj.v)}</textarea>`;
                     td.addEventListener('contextmenu', (e) => { e.preventDefault(); openRcMenuDual(e, colIdx, rowIdx); });
+                    addLongPress(td, (e) => openRcMenuDual(e, colIdx, rowIdx));
                     applyCellBodyStyle(td, cellObj, rowIdx, colIdx);
                     const rowHandle = document.createElement('div');
                     rowHandle.className = 'row-resize-handle';
@@ -5269,9 +5388,25 @@
             document.getElementById('rcMenuAddAfterLabel').textContent = isRow ? ('แทรกแถวหลังแถว ' + pos) : ('แทรกคอลัมน์หลังคอลัมน์ ' + pos);
             document.getElementById('rcMenuDeleteLabel').textContent = isRow ? ('ลบแถว ' + pos) : ('ลบคอลัมน์ ' + pos);
 
-            menu.style.left = e.clientX + 'px';
-            menu.style.top = e.clientY + 'px';
             menu.classList.add('active');
+            clampMenuToViewport(menu, e.clientX, e.clientY);
+        }
+
+        function clampMenuToViewport(menu, x, y) {
+            // Position immediately so offsetWidth/Height are correct on next frame
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+            requestAnimationFrame(() => {
+                const mw = menu.offsetWidth, mh = menu.offsetHeight;
+                const vw = window.innerWidth, vh = window.innerHeight;
+                let lx = x, ty = y;
+                if (lx + mw > vw - 8) lx = vw - mw - 8;
+                if (ty + mh > vh - 8) ty = vh - mh - 8;
+                if (lx < 8) lx = 8;
+                if (ty < 8) ty = 8;
+                menu.style.left = lx + 'px';
+                menu.style.top = ty + 'px';
+            });
         }
 
         function rcMenuAction(action) {
@@ -5351,9 +5486,8 @@
             }
 
             const menu = document.getElementById('tableRowColMenu');
-            menu.style.left = e.clientX + 'px';
-            menu.style.top = e.clientY + 'px';
             menu.classList.add('active');
+            clampMenuToViewport(menu, e.clientX, e.clientY);
         }
 
         function rcMenuDualAction(type, action) {
@@ -5610,6 +5744,25 @@
         function saveTableTitle() {
             const p = projects.find(x => x.id === currentProjectId);
             if (p) { const titleEl = document.getElementById('tableTitle'); if (titleEl) p.tableTitle = titleEl.value; }
+        }
+
+        // Helper: add long-press (500ms) as a substitute for right-click on touch devices
+        function addLongPress(el, handler) {
+            let timer = null;
+            let moved = false;
+            el.addEventListener('touchstart', (e) => {
+                moved = false;
+                timer = setTimeout(() => {
+                    if (!moved) {
+                        const t = e.touches[0];
+                        // Synthesise a minimal event-like object for the menu handler
+                        handler({ clientX: t.clientX, clientY: t.clientY, preventDefault() {}, stopPropagation() {} });
+                    }
+                }, 500);
+            }, { passive: true });
+            el.addEventListener('touchmove', () => { moved = true; clearTimeout(timer); }, { passive: true });
+            el.addEventListener('touchend', () => clearTimeout(timer), { passive: true });
+            el.addEventListener('touchcancel', () => clearTimeout(timer), { passive: true });
         }
 
         // --- Table column/row resize (drag) ---
@@ -6147,12 +6300,12 @@
         function renderUserChip() {
             const area = document.getElementById('authArea');
             area.innerHTML = `
-                                    <span class="user-chip">
-                                        <img src="${currentUser.picture}" alt="avatar">
-                                        <span class="user-chip-name">${currentUser.name}</span>
-                                    </span>
-                                    <button class="signout-btn" onclick="signOutGoogle()">ออกจากระบบ</button>
-                                `;
+                                        <span class="user-chip">
+                                            <img src="${currentUser.picture}" alt="avatar">
+                                            <span class="user-chip-name">${currentUser.name}</span>
+                                        </span>
+                                        <button class="signout-btn" onclick="signOutGoogle()">ออกจากระบบ</button>
+                                    `;
         }
 
         function handleGoogleCredential(response) {
