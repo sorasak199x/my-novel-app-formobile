@@ -2818,16 +2818,16 @@
                         : `<span style="display:inline-block;width:22px;flex-shrink:0;"></span>`;
 
                     item.innerHTML = `
-                                                                                                                            <div style="display: flex; align-items: center; gap: 6px; flex-grow: 1; overflow: hidden; min-width:0;">
-                                                                                                                                ${toggleArrow}
-                                                                                                                                <span class="project-icon">${iconText}</span>
-                                                                                                                                <span class="project-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.title.replace(/<[^>]*>?/gm, '').trim() || "Untitled"}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="project-item-actions">
-                                                                                                                                <button class="proj-action-btn" onclick="openProjectMenu(event, ${proj.id}, this)">•••</button>
-                                                                                                                                <button class="proj-action-btn" onclick="openToolMenu(event, this, ${proj.id})">+</button>
-                                                                                                                            </div>
-                                                                                                                        `;
+                                                                                                                                <div style="display: flex; align-items: center; gap: 6px; flex-grow: 1; overflow: hidden; min-width:0;">
+                                                                                                                                    ${toggleArrow}
+                                                                                                                                    <span class="project-icon">${iconText}</span>
+                                                                                                                                    <span class="project-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.title.replace(/<[^>]*>?/gm, '').trim() || "Untitled"}</span>
+                                                                                                                                </div>
+                                                                                                                                <div class="project-item-actions">
+                                                                                                                                    <button class="proj-action-btn" onclick="openProjectMenu(event, ${proj.id}, this)">•••</button>
+                                                                                                                                    <button class="proj-action-btn" onclick="openToolMenu(event, this, ${proj.id})">+</button>
+                                                                                                                                </div>
+                                                                                                                            `;
 
                     attachDragListeners(item, proj.id);
                     list.appendChild(item);
@@ -3163,15 +3163,15 @@
 
                 let iconText = proj.iconHtml.includes('<img') ? '🖼️' : proj.iconHtml;
                 item.innerHTML = `
-                                                                                                                                        <div style="display: flex; align-items: center; gap: 15px; overflow: hidden;">
-                                                                                                                                            <span style="font-size: 24px; flex-shrink: 0;">${iconText}</span>
-                                                                                                                                            <span style="font-weight: bold; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.title.replace(/<[^>]*>?/gm, '').trim() || "Untitled"}</span>
-                                                                                                                                        </div>
-                                                                                                                                        <div style="display: flex; gap: 10px; flex-shrink: 0;">
-                                                                                                                                            <button onclick="restoreProject(${proj.id}, event)" style="padding: 8px 16px; background: var(--hover-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='var(--hover-bg)'">Restore</button>
-                                                                                                                                            <button onclick="permanentlyDeleteProject(${proj.id}, event)" style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='rgba(235, 87, 87, 0.1)'" onmouseout="this.style.background='transparent'">Delete Permanently</button>
-                                                                                                                                        </div>
-                                                                                                                                    `;
+                                                                                                                                            <div style="display: flex; align-items: center; gap: 15px; overflow: hidden;">
+                                                                                                                                                <span style="font-size: 24px; flex-shrink: 0;">${iconText}</span>
+                                                                                                                                                <span style="font-weight: bold; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${proj.title.replace(/<[^>]*>?/gm, '').trim() || "Untitled"}</span>
+                                                                                                                                            </div>
+                                                                                                                                            <div style="display: flex; gap: 10px; flex-shrink: 0;">
+                                                                                                                                                <button onclick="restoreProject(${proj.id}, event)" style="padding: 8px 16px; background: var(--hover-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='var(--hover-bg)'">Restore</button>
+                                                                                                                                                <button onclick="permanentlyDeleteProject(${proj.id}, event)" style="padding: 8px 16px; background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='rgba(235, 87, 87, 0.1)'" onmouseout="this.style.background='transparent'">Delete Permanently</button>
+                                                                                                                                            </div>
+                                                                                                                                        `;
                 list.appendChild(item);
             });
         }
@@ -3277,20 +3277,50 @@
         let coverDragStartY = 0;
         let currentCoverPosY = 50;
 
-        function changeCover(event) {
+        async function changeCover(event) {
             const file = event.target.files[0];
-            if (file) {
+            if (!file) return;
+            // แสดงตัวอย่างด้วย object URL ชั่วคราวขณะอัปโหลด
+            const tempUrl = URL.createObjectURL(file);
+            document.getElementById('coverContainer').style.backgroundImage = `url(${tempUrl})`;
+            document.getElementById('coverContainer').style.backgroundPosition = `center 50%`;
+            currentCoverPosY = 50;
+            if (accessToken) {
+                try {
+                    setSyncStatus('saving', 'กำลังอัปโหลดรูปปก...');
+                    const url = await uploadMediaToDrive(file);
+                    URL.revokeObjectURL(tempUrl);
+                    document.getElementById('coverContainer').style.backgroundImage = `url(${url})`;
+                    setSyncStatus('saved', 'อัปโหลดรูปปกสำเร็จแล้ว');
+                } catch (err) {
+                    console.error('Cover upload error:', err);
+                    setSyncStatus('error', 'อัปโหลดรูปปก Drive ไม่สำเร็จ — ใช้ข้อมูลในเครื่องชั่วคราว');
+                    // fallback: ใช้ base64
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        URL.revokeObjectURL(tempUrl);
+                        document.getElementById('coverContainer').style.backgroundImage = `url(${e.target.result})`;
+                        saveCurrentProjectData();
+                        startRepositionCover();
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            } else {
+                // ยังไม่ login → ใช้ base64 ชั่วคราว
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const url = e.target.result; // base64 data URL — persists in localStorage/Drive
-                    document.getElementById('coverContainer').style.backgroundImage = `url(${url})`;
-                    document.getElementById('coverContainer').style.backgroundPosition = `center 50%`;
-                    currentCoverPosY = 50;
+                    URL.revokeObjectURL(tempUrl);
+                    document.getElementById('coverContainer').style.backgroundImage = `url(${e.target.result})`;
+                    setSyncStatus('offline', 'ล็อกอิน Google Drive เพื่อเก็บไฟล์บนคลาวด์');
                     saveCurrentProjectData();
                     startRepositionCover();
                 };
                 reader.readAsDataURL(file);
+                return;
             }
+            saveCurrentProjectData();
+            startRepositionCover();
         }
 
         function startRepositionCover() {
@@ -3339,17 +3369,41 @@
             }
         });
 
-        function changeIcon(event) {
+        async function changeIcon(event) {
             const file = event.target.files[0];
-            if (file) {
+            if (!file) return;
+            if (accessToken) {
+                try {
+                    setSyncStatus('saving', 'กำลังอัปโหลดไอคอน...');
+                    const url = await uploadMediaToDrive(file);
+                    document.getElementById('iconDisplay').innerHTML = `<img src="${url}" alt="icon">`;
+                    setSyncStatus('saved', 'อัปโหลดไอคอนสำเร็จแล้ว');
+                } catch (err) {
+                    console.error('Icon upload error:', err);
+                    setSyncStatus('error', 'อัปโหลดไอคอน Drive ไม่สำเร็จ — ใช้ข้อมูลในเครื่องชั่วคราว');
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        document.getElementById('iconDisplay').innerHTML = `<img src="${e.target.result}" alt="icon">`;
+                        saveCurrentProjectData();
+                        renderProjectList();
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            } else {
+                // ยังไม่ login → ใช้ base64 ชั่วคราว
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     document.getElementById('iconDisplay').innerHTML = `<img src="${e.target.result}" alt="icon">`;
+                    setSyncStatus('offline', 'ล็อกอิน Google Drive เพื่อเก็บไฟล์บนคลาวด์');
                     saveCurrentProjectData();
                     renderProjectList();
                 };
                 reader.readAsDataURL(file);
+                return;
             }
+            saveCurrentProjectData();
+            renderProjectList();
         }
 
         /* ----- Undo / Redo History System ----- */
@@ -3543,13 +3597,13 @@
             const controls = document.createElement('div');
             controls.className = 'block-controls';
             controls.innerHTML = `
-                                                                                                                                                                    <button class="add-btn" onclick="openAddMenu(event, this)">+
-                                                                                                                                                                        <span class="tooltip-text">Click to add below<br>Alt-click to add a block above</span>
-                                                                                                                                                                    </button>
-                                                                                                                                                                    <button class="drag-btn" onclick="openOptionsMenu(event, this)">⋮⋮
-                                                                                                                                                                        <span class="tooltip-text">Drag to move<br>Click or ctrl/ to open menu</span>
-                                                                                                                                                                    </button>
-                                                                                                                                                                `;
+                                                                                                                                                                        <button class="add-btn" onclick="openAddMenu(event, this)">+
+                                                                                                                                                                            <span class="tooltip-text">Click to add below<br>Alt-click to add a block above</span>
+                                                                                                                                                                        </button>
+                                                                                                                                                                        <button class="drag-btn" onclick="openOptionsMenu(event, this)">⋮⋮
+                                                                                                                                                                            <span class="tooltip-text">Drag to move<br>Click or ctrl/ to open menu</span>
+                                                                                                                                                                        </button>
+                                                                                                                                                                    `;
 
             const wrapper = document.createElement('div');
             wrapper.className = 'block-content-wrapper';
@@ -3598,15 +3652,15 @@
                 ghost.id = 'ghostAddBlock';
                 ghost.className = 'block-row ghost-row';
                 ghost.innerHTML = `
-                                                                                                                                                                        <div class="block-main">
-                                                                                                                                                                            <div class="block-controls" style="opacity: 1;">
-                                                                                                                                                                                <button class="add-btn" onclick="openAddMenu(event, this); event.stopPropagation();">+</button>
+                                                                                                                                                                            <div class="block-main">
+                                                                                                                                                                                <div class="block-controls" style="opacity: 1;">
+                                                                                                                                                                                    <button class="add-btn" onclick="openAddMenu(event, this); event.stopPropagation();">+</button>
+                                                                                                                                                                                </div>
+                                                                                                                                                                                <div class="block-content-wrapper" onclick="addBlockFromGhost(); event.stopPropagation();">
+                                                                                                                                                                                    <div class="ghost-placeholder">Click to add below</div>
+                                                                                                                                                                                </div>
                                                                                                                                                                             </div>
-                                                                                                                                                                            <div class="block-content-wrapper" onclick="addBlockFromGhost(); event.stopPropagation();">
-                                                                                                                                                                                <div class="ghost-placeholder">Click to add below</div>
-                                                                                                                                                                            </div>
-                                                                                                                                                                        </div>
-                                                                                                                                                                    `;
+                                                                                                                                                                        `;
             }
             editor.appendChild(ghost);
         }
@@ -4005,32 +4059,66 @@
             else if (type === 'video') document.getElementById('videoBlockInput').click();
         }
 
-        function insertMedia(event, type) {
+        async function insertMedia(event, type) {
             const file = event.target.files[0];
             if (!file) return;
             saveState();
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const url = e.target.result; // base64 data URL — persists in localStorage/Drive
-                const newBlock = createBlockElement(type);
-                const contentDiv = newBlock.querySelector('.block-content');
+            // แทรก block placeholder ก่อนขณะรออัปโหลด
+            const newBlock = createBlockElement(type);
+            const contentDiv = newBlock.querySelector('.block-content');
+            contentDiv.innerHTML = `<span style="color:var(--text-muted);font-size:13px;">⏳ กำลังอัปโหลดไปยัง Google Drive...</span>`;
+            if (isGhostActive) {
+                const ghost = document.getElementById('ghostAddBlock');
+                ghost.insertAdjacentElement('beforebegin', newBlock);
+            } else if (currentActiveBlock) {
+                currentActiveBlock.insertAdjacentElement('afterend', newBlock);
+            }
+            appendGhostBlock();
 
-                if (type === 'image') contentDiv.innerHTML = `<img src="${url}" class="media-block" alt="Image">`;
-                else if (type === 'video') contentDiv.innerHTML = `<video src="${url}" class="media-block" controls></video>`;
-
-                if (isGhostActive) {
-                    const ghost = document.getElementById('ghostAddBlock');
-                    ghost.insertAdjacentElement('beforebegin', newBlock);
-                } else if (currentActiveBlock) {
-                    currentActiveBlock.insertAdjacentElement('afterend', newBlock);
+            // ถ้า login Drive อยู่ → อัปโหลดขึ้น Drive แล้วใช้ URL
+            if (accessToken) {
+                try {
+                    setSyncStatus('saving', 'กำลังอัปโหลดไฟล์...');
+                    const url = await uploadMediaToDrive(file);
+                    if (type === 'image') {
+                        contentDiv.innerHTML = `<img src="${url}" class="media-block" alt="Image">`;
+                    } else if (type === 'video') {
+                        contentDiv.innerHTML = `<video src="${url}" class="media-block" controls></video>`;
+                    }
+                    setSyncStatus('saved', 'อัปโหลดไฟล์สำเร็จแล้ว');
+                } catch (err) {
+                    console.error('Drive media upload error:', err);
+                    // fallback: ใช้ base64 ชั่วคราวถ้า Drive ล้มเหลว
+                    setSyncStatus('error', 'อัปโหลด Drive ไม่สำเร็จ — ใช้ข้อมูลในเครื่องชั่วคราว');
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const url = e.target.result;
+                        if (type === 'image') contentDiv.innerHTML = `<img src="${url}" class="media-block" alt="Image">`;
+                        else if (type === 'video') contentDiv.innerHTML = `<video src="${url}" class="media-block" controls></video>`;
+                        saveState();
+                    };
+                    reader.readAsDataURL(file);
+                    event.target.value = '';
+                    return;
                 }
+            } else {
+                // ยังไม่ได้ login → ใช้ base64 ชั่วคราว พร้อมแจ้งเตือน
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const url = e.target.result;
+                    if (type === 'image') contentDiv.innerHTML = `<img src="${url}" class="media-block" alt="Image">`;
+                    else if (type === 'video') contentDiv.innerHTML = `<video src="${url}" class="media-block" controls></video>`;
+                    setSyncStatus('offline', 'ล็อกอิน Google Drive เพื่อเก็บไฟล์บนคลาวด์');
+                    saveState();
+                };
+                reader.readAsDataURL(file);
+                event.target.value = '';
+                return;
+            }
 
-                appendGhostBlock();
-                saveState();
-            };
-            reader.readAsDataURL(file);
             event.target.value = '';
+            saveState();
         }
 
         /* ==========================================
@@ -4043,22 +4131,22 @@
             newItem.className = 'timeline-item';
 
             newItem.innerHTML = `
-                                                                                                                                <div class="timeline-content">
-                                                                                                                                    <div class="datetime-group">
-                                                                                                                                        <input type="text" class="input-date" placeholder="DD/MM/YYYY">
-                                                                                                                                        <input type="text" class="input-time" placeholder="Time / Time Period">
-                                                                                                                                    </div>
-                                                                                                                                    <div class="details-group">
-                                                                                                                                        <div class="header-row">
-                                                                                                                                            <input type="text" class="input-title" placeholder="Event Title...">
-                                                                                                                                            <button class="btn-delete-event" onclick="deleteTimelineItem(this)">Delete</button>
+                                                                                                                                    <div class="timeline-content">
+                                                                                                                                        <div class="datetime-group">
+                                                                                                                                            <input type="text" class="input-date" placeholder="DD/MM/YYYY">
+                                                                                                                                            <input type="text" class="input-time" placeholder="Time / Time Period">
                                                                                                                                         </div>
-                                                                                                                                        <div class="timeline-body">
-                                                                                                                                            <textarea placeholder="Type event details here..."></textarea>
+                                                                                                                                        <div class="details-group">
+                                                                                                                                            <div class="header-row">
+                                                                                                                                                <input type="text" class="input-title" placeholder="Event Title...">
+                                                                                                                                                <button class="btn-delete-event" onclick="deleteTimelineItem(this)">Delete</button>
+                                                                                                                                            </div>
+                                                                                                                                            <div class="timeline-body">
+                                                                                                                                                <textarea placeholder="Type event details here..."></textarea>
+                                                                                                                                            </div>
                                                                                                                                         </div>
                                                                                                                                     </div>
-                                                                                                                                </div>
-                                                                                                                            `;
+                                                                                                                                `;
 
             container.appendChild(newItem);
             newItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -4261,24 +4349,24 @@
                 node.style.top = ((workspace.clientHeight / 2 - panY) / scale + offsetY - 40) + 'px';
             }
             node.innerHTML = `
-                                                                                                                                        <div class="color-palette" id="palette_${id}">
-                                                                                                                                            <div class="swatch c-default" onclick="setColor('${id}','border-c-default',event)"></div>
-                                                                                                                                            <div class="swatch c-blue" onclick="setColor('${id}','border-c-blue',event)"></div>
-                                                                                                                                            <div class="swatch c-red" onclick="setColor('${id}','border-c-red',event)"></div>
-                                                                                                                                            <div class="swatch c-pink" onclick="setColor('${id}','border-c-pink',event)"></div>
-                                                                                                                                            <div class="swatch c-green" onclick="setColor('${id}','border-c-green',event)"></div>
-                                                                                                                                            <div class="swatch c-purple" onclick="setColor('${id}','border-c-purple',event)"></div>
-                                                                                                                                            <div class="swatch c-yellow" onclick="setColor('${id}','border-c-yellow',event)"></div>
-                                                                                                                                        </div>
-                                                                                                                                        <div class="image-circle ${defaultColor}" id="circle_${id}">
-                                                                                                                                            <span>Image</span>
-                                                                                                                                            <div class="btn-delete-node node-btn" onclick="deleteNode('${id}',event)">✕</div>
-                                                                                                                                            <div class="btn-color-trigger node-btn" onclick="togglePalette('${id}',event)">🎨</div>
-                                                                                                                                            <div class="btn-connect node-btn" onpointerdown="startLinking('${id}',event)">＋</div>
-                                                                                                                                        </div>
-                                                                                                                                        <label class="btn-upload">+ Upload Image<input type="file" accept="image/*" onchange="uploadImg(this,'circle_${id}')" style="display:none;"></label>
-                                                                                                                                        <input type="text" class="char-name" value="${defaultName || `Character ${charCount}`}" onfocus="this.select()">
-                                                                                                                                    `;
+                                                                                                                                            <div class="color-palette" id="palette_${id}">
+                                                                                                                                                <div class="swatch c-default" onclick="setColor('${id}','border-c-default',event)"></div>
+                                                                                                                                                <div class="swatch c-blue" onclick="setColor('${id}','border-c-blue',event)"></div>
+                                                                                                                                                <div class="swatch c-red" onclick="setColor('${id}','border-c-red',event)"></div>
+                                                                                                                                                <div class="swatch c-pink" onclick="setColor('${id}','border-c-pink',event)"></div>
+                                                                                                                                                <div class="swatch c-green" onclick="setColor('${id}','border-c-green',event)"></div>
+                                                                                                                                                <div class="swatch c-purple" onclick="setColor('${id}','border-c-purple',event)"></div>
+                                                                                                                                                <div class="swatch c-yellow" onclick="setColor('${id}','border-c-yellow',event)"></div>
+                                                                                                                                            </div>
+                                                                                                                                            <div class="image-circle ${defaultColor}" id="circle_${id}">
+                                                                                                                                                <span>Image</span>
+                                                                                                                                                <div class="btn-delete-node node-btn" onclick="deleteNode('${id}',event)">✕</div>
+                                                                                                                                                <div class="btn-color-trigger node-btn" onclick="togglePalette('${id}',event)">🎨</div>
+                                                                                                                                                <div class="btn-connect node-btn" onpointerdown="startLinking('${id}',event)">＋</div>
+                                                                                                                                            </div>
+                                                                                                                                            <label class="btn-upload">+ Upload Image<input type="file" accept="image/*" onchange="uploadImg(this,'circle_${id}')" style="display:none;"></label>
+                                                                                                                                            <input type="text" class="char-name" value="${defaultName || `Character ${charCount}`}" onfocus="this.select()">
+                                                                                                                                        `;
             initDrag(node); workspaceInner.appendChild(node); return id;
         }
 
@@ -4440,7 +4528,34 @@
         function togglePalette(id, e) { e.stopPropagation(); document.querySelectorAll('.color-palette.show').forEach(p => { if (p.id !== `palette_${id}`) p.classList.remove('show'); }); document.getElementById(`palette_${id}`)?.classList.toggle('show'); }
         window.addEventListener('pointerdown', (e) => { if (!e.target.closest('.color-palette') && !e.target.closest('.btn-color-trigger')) document.querySelectorAll('.color-palette.show').forEach(p => p.classList.remove('show')); });
         function setColor(id, cClass, e) { e.stopPropagation(); document.getElementById(`circle_${id}`).className = 'image-circle ' + cClass; document.getElementById(`palette_${id}`).classList.remove('show'); }
-        function uploadImg(input, tId) { if (input.files?.[0]) { const r = new FileReader(); r.onload = e => { const t = document.getElementById(tId); t.style.backgroundImage = `url('${e.target.result}')`; t.querySelector('span').style.display = 'none'; }; r.readAsDataURL(input.files[0]); } }
+        function uploadImg(input, tId) {
+            if (!input.files?.[0]) return;
+            const file = input.files[0];
+            const target = document.getElementById(tId);
+            if (accessToken) {
+                setSyncStatus('saving', 'กำลังอัปโหลดรูปตัวละคร...');
+                uploadMediaToDrive(file).then(url => {
+                    target.style.backgroundImage = `url('${url}')`;
+                    target.querySelector('span').style.display = 'none';
+                    setSyncStatus('saved', 'อัปโหลดรูปตัวละครสำเร็จแล้ว');
+                }).catch(err => {
+                    console.error('Char image upload error:', err);
+                    setSyncStatus('error', 'อัปโหลดรูปตัวละคร Drive ไม่สำเร็จ — ใช้ข้อมูลในเครื่องชั่วคราว');
+                    const r = new FileReader();
+                    r.onload = e => { target.style.backgroundImage = `url('${e.target.result}')`; target.querySelector('span').style.display = 'none'; };
+                    r.readAsDataURL(file);
+                });
+            } else {
+                // ยังไม่ login → ใช้ base64 ชั่วคราว
+                const r = new FileReader();
+                r.onload = e => {
+                    target.style.backgroundImage = `url('${e.target.result}')`;
+                    target.querySelector('span').style.display = 'none';
+                    setSyncStatus('offline', 'ล็อกอิน Google Drive เพื่อเก็บไฟล์บนคลาวด์');
+                };
+                r.readAsDataURL(file);
+            }
+        }
         function deleteNode(id, e) { e.stopPropagation(); if (confirm("Delete this character?")) { document.getElementById(id).remove(); connections = connections.filter(c => c.from !== id && c.to !== id); } }
         function clearConnections() { if (confirm("Clear All Lines?")) connections = []; }
 
@@ -4509,39 +4624,39 @@
             card.className = 'chart-card';
             card.id = cardId;
             card.innerHTML = `
-                                                                                                                <div class="chart-card-header" onclick="toggleChartCard('${cardId}')">
-                                                                                                                    <span class="chart-card-toggle">▼</span>
-                                                                                                                    <input class="chart-card-title-input" type="text" placeholder="Chart Title…"
-                                                                                                                        value="${savedData ? (savedData.title || '').replace(/"/g, '&quot;') : ''}"
-                                                                                                                        onclick="event.stopPropagation()"
-                                                                                                                        oninput="renderChartCard('${cardId}')">
-                                                                                                                    <span class="chart-card-type-badge" id="${badgeId}">Bar ↕</span>
-                                                                                                                    <button class="chart-card-delete" onclick="deleteChartCard(event,'${cardId}')" title="Delete this chart">✕</button>
-                                                                                                                </div>
-                                                                                                                <div class="chart-card-body">
-                                                                                                                    <div class="graph-toolbar" style="margin-bottom:20px;">
-                                                                                                                        <label class="graph-label">Type
-                                                                                                                            <select id="${typeId}" onchange="renderChartCard('${cardId}')">
-                                                                                                                                <option value="bar">Bar (Vertical)</option>
-                                                                                                                                <option value="bar_h">Bar (Horizontal)</option>
-                                                                                                                                <option value="line">Line</option>
-                                                                                                                                <option value="pie">Pie</option>
-                                                                                                                            </select>
-                                                                                                                        </label>
-                                                                                                                        <button class="btn-notion primary" onclick="addChartRow('${rowsId}','${cardId}')">＋ Add Row</button>
+                                                                                                                    <div class="chart-card-header" onclick="toggleChartCard('${cardId}')">
+                                                                                                                        <span class="chart-card-toggle">▼</span>
+                                                                                                                        <input class="chart-card-title-input" type="text" placeholder="Chart Title…"
+                                                                                                                            value="${savedData ? (savedData.title || '').replace(/"/g, '&quot;') : ''}"
+                                                                                                                            onclick="event.stopPropagation()"
+                                                                                                                            oninput="renderChartCard('${cardId}')">
+                                                                                                                        <span class="chart-card-type-badge" id="${badgeId}">Bar ↕</span>
+                                                                                                                        <button class="chart-card-delete" onclick="deleteChartCard(event,'${cardId}')" title="Delete this chart">✕</button>
                                                                                                                     </div>
-                                                                                                                    <div class="graph-body" id="gbody_${cardId}">
-                                                                                                                        <div class="graph-data-panel">
-                                                                                                                            <div class="graph-data-header">
-                                                                                                                                <span>Label</span><span>Value</span><span>Color</span><span></span>
+                                                                                                                    <div class="chart-card-body">
+                                                                                                                        <div class="graph-toolbar" style="margin-bottom:20px;">
+                                                                                                                            <label class="graph-label">Type
+                                                                                                                                <select id="${typeId}" onchange="renderChartCard('${cardId}')">
+                                                                                                                                    <option value="bar">Bar (Vertical)</option>
+                                                                                                                                    <option value="bar_h">Bar (Horizontal)</option>
+                                                                                                                                    <option value="line">Line</option>
+                                                                                                                                    <option value="pie">Pie</option>
+                                                                                                                                </select>
+                                                                                                                            </label>
+                                                                                                                            <button class="btn-notion primary" onclick="addChartRow('${rowsId}','${cardId}')">＋ Add Row</button>
+                                                                                                                        </div>
+                                                                                                                        <div class="graph-body" id="gbody_${cardId}">
+                                                                                                                            <div class="graph-data-panel">
+                                                                                                                                <div class="graph-data-header">
+                                                                                                                                    <span>Label</span><span>Value</span><span>Color</span><span></span>
+                                                                                                                                </div>
+                                                                                                                                <div id="${rowsId}"></div>
                                                                                                                             </div>
-                                                                                                                            <div id="${rowsId}"></div>
+                                                                                                                            <div class="graph-canvas-panel" style="min-height:380px;">
+                                                                                                                                <canvas id="${canvasId}"></canvas>
+                                                                                                                            </div>
                                                                                                                         </div>
-                                                                                                                        <div class="graph-canvas-panel" style="min-height:380px;">
-                                                                                                                            <canvas id="${canvasId}"></canvas>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                </div>`;
+                                                                                                                    </div>`;
 
             document.getElementById('chartCardList').appendChild(card);
 
@@ -4584,15 +4699,15 @@
             row.className = 'graph-row';
             row.id = rowId;
             row.innerHTML = `
-                                                                                                                <input type="text" class="graph-label-input" placeholder="Label…"
-                                                                                                                    value="${label !== undefined ? String(label).replace(/"/g, '&quot;') : ''}"
-                                                                                                                    oninput="renderChartCard('${cardId}')">
-                                                                                                                <input type="number" class="graph-value-input" placeholder="0"
-                                                                                                                    value="${value !== undefined && value !== null ? value : ''}"
-                                                                                                                    oninput="renderChartCard('${cardId}')">
-                                                                                                                <input type="color" class="graph-color-input" value="${autoColor}"
-                                                                                                                    oninput="renderChartCard('${cardId}')">
-                                                                                                                <button class="graph-row-delete" onclick="document.getElementById('${rowId}').remove(); renderChartCard('${cardId}')" title="Delete row">✕</button>`;
+                                                                                                                    <input type="text" class="graph-label-input" placeholder="Label…"
+                                                                                                                        value="${label !== undefined ? String(label).replace(/"/g, '&quot;') : ''}"
+                                                                                                                        oninput="renderChartCard('${cardId}')">
+                                                                                                                    <input type="number" class="graph-value-input" placeholder="0"
+                                                                                                                        value="${value !== undefined && value !== null ? value : ''}"
+                                                                                                                        oninput="renderChartCard('${cardId}')">
+                                                                                                                    <input type="color" class="graph-color-input" value="${autoColor}"
+                                                                                                                        oninput="renderChartCard('${cardId}')">
+                                                                                                                    <button class="graph-row-delete" onclick="document.getElementById('${rowId}').remove(); renderChartCard('${cardId}')" title="Delete row">✕</button>`;
             document.getElementById(rowsId).appendChild(row);
         }
 
@@ -6104,7 +6219,7 @@
         /* ====== ตั้งค่า Google API ของคุณที่นี่ ====== */
         const GOOGLE_CLIENT_ID = '112872928876-ij92ttbe7441j9f7c014aacc14gcfvu4.apps.googleusercontent.com';
         const GOOGLE_API_KEY = 'AIzaSyCK1FVmH1cQQm6rs00s1nqkTtejNlAirSM'; // (ไม่บังคับ แต่แนะนำให้ใส่)
-        const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+        const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file';
         const DRIVE_FILE_NAME = 'block-editor-novel-data.json';
         const LOCAL_STORAGE_KEY_BASE = 'blockEditorNovelData';
         /* ---------- แยกข้อมูลใน localStorage ตามบัญชี Google ----------
@@ -6483,13 +6598,13 @@
                 ? `<button class="drive-connect-btn" onclick="connectGoogleDrive()">🔗 เชื่อมต่อ Drive</button>`
                 : '';
             area.innerHTML = `
-                                                                                <span class="user-chip">
-                                                                                    <img src="${currentUser.picture}" alt="avatar">
-                                                                                    <span class="user-chip-name">${currentUser.name}</span>
-                                                                                </span>
-                                                                                ${driveBtn}
-                                                                                <button class="signout-btn" onclick="signOutGoogle()">ออกจากระบบ</button>
-                                                                            `;
+                                                                                    <span class="user-chip">
+                                                                                        <img src="${currentUser.picture}" alt="avatar">
+                                                                                        <span class="user-chip-name">${currentUser.name}</span>
+                                                                                    </span>
+                                                                                    ${driveBtn}
+                                                                                    <button class="signout-btn" onclick="signOutGoogle()">ออกจากระบบ</button>
+                                                                                `;
         }
 
         function handleGoogleCredential(response) {
@@ -6732,6 +6847,127 @@
             });
             if (!res.ok) throw new Error('Drive upload failed: ' + res.status);
             return res.json();
+        }
+
+        /* ---------- อัปโหลดไฟล์มีเดีย (รูป/วิดีโอ) ขึ้น Google Drive ----------
+         * ใช้ drive.file scope เก็บในโฟลเดอร์ "BlockEditorMedia" ใน My Drive
+         * แล้วแชร์สาธารณะเพื่อให้ใช้ URL โดยตรงในหน้าเว็บได้เลย
+         * ไม่เก็บ base64 ในเครื่องเลย — ประหยัดพื้นที่ localStorage/IndexedDB */
+        const MEDIA_FOLDER_NAME = 'BlockEditorMedia';
+        let mediaFolderId = null; // cache folder id
+
+        async function getOrCreateMediaFolder() {
+            if (mediaFolderId) return mediaFolderId;
+            if (!accessToken) throw new Error('ยังไม่ได้เชื่อมต่อ Drive');
+            gapi.client.setToken({ access_token: accessToken });
+            // ค้นหาโฟลเดอร์ที่มีอยู่แล้ว
+            const searchRes = await gapi.client.drive.files.list({
+                q: `name='${MEDIA_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                fields: 'files(id)',
+                spaces: 'drive'
+            });
+            const folders = searchRes.result.files || [];
+            if (folders.length > 0) {
+                mediaFolderId = folders[0].id;
+                return mediaFolderId;
+            }
+            // สร้างโฟลเดอร์ใหม่
+            const createRes = await gapi.client.drive.files.create({
+                resource: { name: MEDIA_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' },
+                fields: 'id'
+            });
+            mediaFolderId = createRes.result.id;
+            return mediaFolderId;
+        }
+
+        async function uploadMediaToDrive(file) {
+            if (!accessToken) throw new Error('ยังไม่ได้เชื่อมต่อ Drive');
+            const folderId = await getOrCreateMediaFolder();
+            // อ่านไฟล์เป็น ArrayBuffer แล้วอัปโหลดแบบ multipart
+            const arrayBuffer = await file.arrayBuffer();
+            const metadata = {
+                name: `media_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`,
+                parents: [folderId]
+            };
+            const boundary = 'mediaUploadBoundary';
+            // สร้าง multipart body ด้วย Blob
+            const metaPart = new Blob([
+                `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+                JSON.stringify(metadata),
+                `\r\n--${boundary}\r\nContent-Type: ${file.type}\r\n\r\n`
+            ], { type: 'text/plain' });
+            const endPart = new Blob([`\r\n--${boundary}--`], { type: 'text/plain' });
+            const body = new Blob([metaPart, arrayBuffer, endPart]);
+            const uploadRes = await fetch(
+                'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': `multipart/related; boundary=${boundary}`
+                    },
+                    body: body
+                }
+            );
+            if (!uploadRes.ok) throw new Error('Drive media upload failed: ' + uploadRes.status);
+            const uploadedFile = await uploadRes.json();
+            const fileId = uploadedFile.id;
+            // แชร์ไฟล์ให้อ่านได้แบบสาธารณะ
+            await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: 'reader', type: 'anyone' })
+            });
+            // คืน URL สำหรับแสดงผลโดยตรง
+            return `https://drive.google.com/uc?export=view&id=${fileId}`;
+        }
+
+        /* ---------- อัปโหลดไฟล์มีเดียจาก base64 data URL ขึ้น Drive ----------
+         * ใช้เมื่อมีข้อมูลอยู่แล้วในรูป data URL (เช่น ย้ายข้อมูลเก่า) */
+        async function uploadMediaDataUrlToDrive(dataUrl, filename, mimeType) {
+            if (!accessToken) throw new Error('ยังไม่ได้เชื่อมต่อ Drive');
+            const folderId = await getOrCreateMediaFolder();
+            // แปลง base64 → Blob
+            const base64 = dataUrl.split(',')[1];
+            const binaryStr = atob(base64);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+            const blob = new Blob([bytes], { type: mimeType });
+            const metadata = { name: filename || `media_${Date.now()}`, parents: [folderId] };
+            const boundary = 'mediaUploadBoundary';
+            const metaPart = new Blob([
+                `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+                JSON.stringify(metadata),
+                `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`
+            ], { type: 'text/plain' });
+            const endPart = new Blob([`\r\n--${boundary}--`], { type: 'text/plain' });
+            const body = new Blob([metaPart, blob, endPart]);
+            const uploadRes = await fetch(
+                'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': `multipart/related; boundary=${boundary}`
+                    },
+                    body: body
+                }
+            );
+            if (!uploadRes.ok) throw new Error('Drive media upload failed: ' + uploadRes.status);
+            const uploadedFile = await uploadRes.json();
+            const fileId = uploadedFile.id;
+            await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: 'reader', type: 'anyone' })
+            });
+            return `https://drive.google.com/uc?export=view&id=${fileId}`;
         }
 
         // ครั้งแรกหลัง login: merge ข้อมูล local กับ Drive แล้ว apply ผลลัพธ์
